@@ -1,8 +1,8 @@
 // ユーザーによって異なる定数
 const CALENDAR_ID = 'xxxx';
 const SLACK_USER_TOKEN = 'xxxx';
-const A_EMOJI = 'xxxx';
-const B_EMOJI = 'xxxx';
+const A_EMOJI = ':xxxx:';
+const B_EMOJI = ':xxxx:';
 
 // 場合によって異なる定数
 const A_PLACE = '職場';
@@ -19,8 +19,10 @@ function doPost(e) {
 }
 
 function update() {
-  let now = new Date();
+  let headers = {authorization: 'Bearer ' + SLACK_USER_TOKEN};
   let profile = {status_text: '', status_emoji: ''};
+  let presence = 'away';
+  let now = new Date();
   let holiday = CalendarApp.getCalendarById(HOLIDAY_CALENDAR_ID)
                            .getEventsForDay(now)
                            .length;
@@ -41,12 +43,26 @@ function update() {
       } else if (place == B_PLACE) {
         profile = {status_emoji: B_EMOJI}
       }
+      presence = 'auto';
     }
   }
 
   UrlFetchApp.fetch('https://slack.com/api/users.profile.set', {
     method: 'post',
-    headers: {authorization: 'Bearer ' + SLACK_USER_TOKEN},
-    payload: {profile: JSON.stringify(profile)},
+    headers: headers,
+    payload: {profile: JSON.stringify(profile)}
   });
+
+  UrlFetchApp.fetch('https://slack.com/api/users.setPresence', {
+    method: 'post',
+    headers: headers,
+    payload: {presence: presence}
+  });
+
+  if (presence != 'away') {
+    UrlFetchApp.fetch('https://slack.com/api/users.setActive', {
+      method: 'post',
+      headers: headers
+    });
+  }
 }
